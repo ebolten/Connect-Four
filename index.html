@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Connect Four</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link rel="icon" type="image/ico" href="favicon.ico"/>
+    </head>
+    <script>
+        let player = ['Red','Blue'][Math.floor(Math.random() * 2)]
+        let turn = 0
+        let currentScore = {"Red":0,"Blue":0}
+        
+        document.addEventListener('DOMContentLoaded',function(){
+            document.title = "Connect Four";
+            let gameBoard = loadBoard();
+            let turnHeader = document.getElementById('who-turn');
+            turnHeader.innerText = `${player}'s Turn!`;
+            let scoreHeader = document.getElementById('curr-score');
+            scoreHeader.innerText = `Red: ${currentScore['Red']}, Blue: ${currentScore["Blue"]}`;
+            var newScore = "";
+
+            for (var i = 1; i < 7; i++) {
+                var currArrow = document.getElementById(`arrow-${i}`);
+                currArrow.onclick = (event) => onClickArrow(event,newScore,gameBoard,turnHeader,scoreHeader);
+            }
+        })
+
+        // load gameboard
+        loadBoard = () => {
+            let gameBoard = [[],[],[],[],[],[],[]];
+            for (var i = 1; i < 7; i++) {
+                for (var j = 0; j < 6; j++) {
+                    gameBoard[i].push("");
+                }
+            }
+            return gameBoard;
+        }
+
+            // count the number of occurences of X or O in the array
+        countOccurence = (arr,key=0) => {
+            let next = arr[key];
+            if (arr.length-key >= 4) {
+                let times = 0;
+                for (var i = key; i < arr.length; i++) {
+                    times+=1;
+                    if (arr[i] !== arr[key]) { return this.countOccurence(arr,key+(i-key)); }
+                    if (times === 4) { return next; }
+                }
+            } else { return 0; }
+        }
+
+        // check if diagonal pattern of 4 is found
+        getDiagonal = (board) => {
+            // get all right diagonals
+            let rightDiagonalThree = countOccurence([ board[2][0],board[3][1],board[4][2],board[5][3] ]);
+            let rightDiagonalTwo = countOccurence([ board[1][0],board[2][1],board[3][2],board[4][3],board[5][4] ]);
+            let rightDiagonalOne = countOccurence([ board[0][0],board[1][1],board[2][2],board[3][3],board[4][4],board[5][5] ]);
+            let rightDiagonalFour = countOccurence([ board[0][1],board[1][2],board[2][3],board[3][4],board[4][5] ]);
+            let rightDiagonalFive = countOccurence([ board[0][2],board[1][3],board[2][4],board[3][5] ]);
+            // get all left diagonals
+            let lefttDiagonalThree = countOccurence([ board[3][0],board[2][1],board[1][2],board[0][3] ]);
+            let lefttDiagonalTwo = countOccurence([ board[4][0],board[3][1],board[2][2],board[1][3],board[0][4] ]);
+            let leftDiagonalOne = countOccurence([ board[5][0],board[4][1],board[3][2],board[2][3],board[1][4],board[0][5] ]);
+            let lefttDiagonalFour = countOccurence([ board[5][1],board[4][2],board[3][3],board[2][4],board[1][5] ]);
+            let lefttDiagonalFive = countOccurence([ board[5][2],board[4][3],board[3][4],board[4][5] ]);
+            // check right diagonals
+            if (rightDiagonalThree) { return rightDiagonalThree; } if (rightDiagonalTwo) { return rightDiagonalTwo; }
+            if (rightDiagonalOne) { return rightDiagonalOne; } if (rightDiagonalFour) { return rightDiagonalFour; }
+            if (rightDiagonalFive) { return rightDiagonalFive; }
+            // check left diagonals
+            if (lefttDiagonalThree) { return lefttDiagonalThree; } if (lefttDiagonalTwo) { return lefttDiagonalTwo; }
+            if (leftDiagonalOne) { return leftDiagonalOne; } if (lefttDiagonalFour) { return lefttDiagonalFour; }
+            if (lefttDiagonalFive) { return lefttDiagonalFive; }
+            return false;
+        }
+
+        // find whether there is a pattern going down
+        getDown = (board) => {
+            // check all places for pattern down
+            let downOne = countOccurence(board[1]);
+            let downTwo = countOccurence(board[2]);
+            let downThree = countOccurence(board[3]);
+            let downFour = countOccurence(board[4]);
+            let downFive = countOccurence(board[5]);
+            let downSix = countOccurence(board[6]);
+            // check for pattern down 
+            if (downOne) { return downOne; } if (downTwo) { return downTwo; }
+            if (downThree) { return downThree; } if (downFour) { return downFour; }
+            if (downFive) { return downFive; } if (downSix) { return downSix; }
+            return false;
+        }
+
+        // find whether there is a pattern going accross
+        getAccross = (board) => {
+            // check all places for pattern down
+            let accrossOne = countOccurence([ board[1][6],board[1][6],board[2][6],board[3][6],board[4][6],board[6][6] ]);
+            let accrossTwo = countOccurence([ board[1][0],board[1][1],board[1][2],board[1][3],board[1][4],board[1][5] ]);
+            let accrossThree = countOccurence([ board[2][0],board[2][1],board[2][2],board[2][3],board[2][4],board[2][5] ]);
+            let accrossFour = countOccurence([ board[3][0],board[3][1],board[3][2],board[3][3],board[3][4],board[3][5] ]);
+            let accrossFive = countOccurence([ board[4][0],board[4][1],board[4][2],board[4][3],board[4][4],board[4][5] ]);
+            let accrossSix = countOccurence([ board[5][0],board[5][1],board[5][2],board[5][3],board[5][4],board[5][5] ]);
+            // check for pattern accross
+            if (accrossOne) { return accrossOne; } if (accrossTwo) { return accrossTwo; }
+            if (accrossThree) { return accrossThree; } if (accrossFour) { return accrossFour; }
+            if (accrossFive) { return accrossFive; } if (accrossSix) { return accrossSix; }
+            return false;
+        }
+
+
+        onClickArrow = (event,newScore,gameBoard,turnHeader,scoreHeader) => {
+        var row = parseInt(event.target.id.split('-')[1]);
+        for (var j = 0; j < gameBoard[row].length; j++) {
+            if (!gameBoard[row][j]) {
+                gameBoard[row][j] = player;
+                document.getElementById(`${(gameBoard[row].length-1)-j}${row}`).style.backgroundColor = player;
+                // find if theres a winner
+                if (this.getAccross(gameBoard)) {
+                    let modal = document.getElementById("modal-div");
+                    let span = document.getElementsByClassName("close")[0];
+                    document.getElementById('modal-header').innerText = `${getAccross(gameBoard)} Wins Down!`;
+                    newScore = currentScore;
+                    newScore[getAccross(gameBoard)] += 1;
+                    currentScore = newScore;
+                    scoreHeader.innerText = `Red: ${currentScore['Red']}, Blue: ${currentScore["Blue"]}`;;
+
+                    gameBoard = loadBoard();
+                    modal.style.display = "block";
+                    span.onclick = () => { // clear board and being new game
+                        modal.style.display = "none";
+                        window.location.reload();
+                        turn = 0;
+                        /*for (var j = 1; j < 10; j++) { // clear all turns on board
+                            let elem = document.getElementById("player-" + j);
+
+                            if (elem) { elem.parentNode.removeChild(elem); }
+                            modal.style.display = "none";
+                        }*/
+                    }
+
+                } else if (this.getDiagonal(gameBoard)) {
+                    let modal = document.getElementById("modal-div");
+                    let span = document.getElementsByClassName("close")[0];
+                    document.getElementById('modal-header').innerText = `${getDiagonal(gameBoard)} Wins Diagonal!`;
+                    newScore = currentScore;
+                    newScore[getDiagonal(gameBoard)] += 1;
+                    currentScore = newScore;
+                    scoreHeader.innerText = `Red: ${currentScore['Red']}, Blue: ${currentScore["Blue"]}`;;
+
+                    gameBoard = loadBoard();
+                    modal.style.display = "block";
+                    span.onclick = () => { // clear board and being new game
+                        modal.style.display = "none";
+                        window.location.reload();
+                        turn = 0;
+                        /*for (var j = 1; j < 10; j++) { // clear all turns on board
+                            let elem = document.getElementById("player-" + j);
+
+                            if (elem) { elem.parentNode.removeChild(elem); }
+                            modal.style.display = "none";
+                        }*/
+                    }
+                } else if (getDown(gameBoard)) {
+                    let modal = document.getElementById("modal-div");
+                    let span = document.getElementsByClassName("close")[0];
+                    document.getElementById('modal-header').innerText = `${getDown(gameBoard)} Wins Down!`;
+                    newScore = currentScore;
+                    newScore[getDown(gameBoard)] += 1;
+                    currentScore = newScore;
+                    scoreHeader.innerText = `Red: ${currentScore['Red']}, Blue: ${currentScore["Blue"]}`;;
+
+                    gameBoard = loadBoard();
+                    modal.style.display = "block";
+                    span.onclick = () => { // clear board and being new game
+                        modal.style.display = "none";
+                        window.location.reload();
+                        turn = 0;
+                        /*for (var j = 1; j < 10; j++) { // clear all turns on board
+                            let elem = document.getElementById("player-" + j);
+
+                            if (elem) { elem.parentNode.removeChild(elem); }
+                            modal.style.display = "none";
+                        }*/
+                    }
+                }
+                break;
+            }
+        }
+        player = player === "Red" ? "Blue" : "Red";
+        turnHeader.innerText = `${player}'s Turn!`;
+    }
+
+    closeModal = (modal) => {
+        modal.style.display = "none";
+        window.location.reload();
+        turn = 0;
+    }
+
+    </script>
+    <style>
+        .who-turn {
+        color:black;
+        }
+        .play-header {
+        text-align:center;
+        margin-top:50px;
+        }
+        /* large square */
+        .square {
+        margin:0px;
+        width:400px;
+        margin-left:auto;
+        margin-right:auto;
+        background-color:transparent;
+        text-align:center;
+        }
+        /* small square */
+        .square-sm {
+        height:110px;
+        width:110px;
+        margin-left:auto;
+        margin-right:auto;
+        border: 1px solid black;
+        background-color:transparent;
+        position:relative;
+        padding:15px;
+        display:inline-block;
+        }
+        /* square div for theme picker */
+        .theme-div {
+        margin:0px;
+        margin-top:15px;
+        margin-left:auto;
+        margin-right:auto;
+        text-align:center;
+        }
+        /* square for theme-picker */
+        .square-theme {
+        height:50px;
+        width:50px;
+        margin-left:auto;
+        margin-right:auto;
+        border: 1px solid black;
+        background-color:transparent;
+        position:relative;
+        display:inline-block;
+        }
+        /* popup modal styling */
+        .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgb(0,0,0);
+        background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+        text-align:center;
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 275px;
+        }
+        .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+        }
+        .tictactoe {
+        margin:0px;
+        font-family:'Poppins', sans-serif;
+        }
+
+        /* large square */
+        .connect4-square {
+        border: 1px solid black;
+        background-color:yellow;
+        margin:0px;
+        width:400px;
+        margin-left:auto;
+        margin-right:auto;
+        /*background-color:transparent;*/
+        text-align:center;
+        }
+        /* small square */
+        .connect4-square-sm {
+        border-radius:100px;
+        box-shadow: 1px 2px #888888;
+        height:50px;
+        width:50px;
+        margin-left:auto;
+        margin-right:auto;
+        border: 1px solid black;
+        /*background-color:transparent*/;
+        background-color:white;
+        position:relative;
+        padding:5px;
+        display:inline-block;
+        }
+        .arrow-btn {
+        padding:5px;
+        margin:2px;
+        padding-top:0px;
+        background-color:transparent;
+        border:none;
+        }
+        .arrow-btn:hover {
+        transition: all 0.5s ease 0s;
+        background-color:yellow !important;
+        }
+    </style>
+    <body>
+        <div id="connect4" style="height:100vh">
+            <Navbar/>
+            <div style='text-align:center'>
+                <h1 id="who-turn" style='color:black;'> </h1>
+                <h5 style='visibility:hidden' id="curr-score"> </h5>
+            </div>
+
+            <div id="modal-div" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h1 id="modal-header"> </h1>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:center;">
+                <button class="arrow-btn"><span id="arrow-1" style='font-size:45px;'>&#8681;</span></button>
+                <button class="arrow-btn"><span id="arrow-2" style='font-size:45px;'>&#8681;</span></button>
+                <button class="arrow-btn"><span id="arrow-3" style='font-size:45px;'>&#8681;</span></button>
+                <button class="arrow-btn"><span id="arrow-4" style='font-size:45px;'>&#8681;</span></button>
+                <button class="arrow-btn"><span id="arrow-5" style='font-size:45px;'>&#8681;</span></button>
+                <button class="arrow-btn"><span id="arrow-6" style='font-size:45px;'>&#8681;</span></button>
+            </div>
+
+            <div id='connect4-square' class="connect4-square">
+                <div id="01" class="connect4-square-sm"></div>
+                <div id="02" class="connect4-square-sm"></div>
+                <div id="03" class="connect4-square-sm"></div>
+                <div id="04" class="connect4-square-sm"></div>
+                <div id="05" class="connect4-square-sm"></div>
+                <div id="06" class="connect4-square-sm"></div>
+                <br/>
+                <div id="11" class="connect4-square-sm"></div>
+                <div id="12" class="connect4-square-sm"></div>
+                <div id="13" class="connect4-square-sm"></div>
+                <div id="14" class="connect4-square-sm"></div>
+                <div id="15" class="connect4-square-sm"></div>
+                <div id="16" class="connect4-square-sm"></div>
+                <br/>
+                <div id="21" class="connect4-square-sm"></div>
+                <div id="22" class="connect4-square-sm"></div>
+                <div id="23" class="connect4-square-sm"></div>
+                <div id="24" class="connect4-square-sm"></div>
+                <div id="25" class="connect4-square-sm"></div>
+                <div id="26" class="connect4-square-sm"></div>
+                <br/>
+                <div id="31" class="connect4-square-sm"></div>
+                <div id="32" class="connect4-square-sm"></div>
+                <div id="33" class="connect4-square-sm"></div>
+                <div id="34" class="connect4-square-sm"></div>
+                <div id="35" class="connect4-square-sm"></div>
+                <div id="36" class="connect4-square-sm"></div>
+                <br/>
+                <div id="41" class="connect4-square-sm"></div>
+                <div id="42" class="connect4-square-sm"></div>
+                <div id="43" class="connect4-square-sm"></div>
+                <div id="44" class="connect4-square-sm"></div>
+                <div id="45" class="connect4-square-sm"></div>
+                <div id="46" class="connect4-square-sm"></div>
+                <br/>
+                <div id="51" class="connect4-square-sm"></div>
+                <div id="52" class="connect4-square-sm"></div>
+                <div id="53" class="connect4-square-sm"></div>
+                <div id="54" class="connect4-square-sm"></div>
+                <div id="55" class="connect4-square-sm"></div>
+                <div id="56" class="connect4-square-sm"></div>
+            </div>
+
+        </div>
+        
+    </body>
+</html>
